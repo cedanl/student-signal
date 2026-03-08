@@ -6,7 +6,7 @@ Deze roadmap beschrijft vooral zaken die de eindgebruiker gaat merken. Planning 
 ### komende release
 - Integratie main.py -> Quarto rapport ([#8](https://github.com/cedanl/Uitnodigingsregel/issues/8)).
 - MVP[Edupulse](https://github.com/cedanl/Assistentie/blob/main/03_Use%20case%20-%20EduPulse.md).
-- Data dictionary en data preparation tutorial ([#11](https://github.com/cedanl/Uitnodigingsregel/issues/11), [#12](hhttps://github.com/cedanl/Uitnodigingsregel/issues/12)).
+- Data dictionary en data preparation tutorial ([#11](https://github.com/cedanl/Uitnodigingsregel/issues/11), [#12](https://github.com/cedanl/Uitnodigingsregel/issues/12)).
 - Modulaire repo
 
 ### Hierna
@@ -15,5 +15,6 @@ Deze roadmap beschrijft vooral zaken die de eindgebruiker gaat merken. Planning 
 
 ### Later / ideeën
 - Zie ([Pijn punten](references/PAINPOINTS_OVERVIEW.md))
+
 
 
