@@ -1027,11 +1027,15 @@ def display_top_features(model, data, model_type, n_features=5, dropout_column='
         # Lasso coefficients
         coefs = pd.Series(model.coef_, index=X.columns)
         top_coefs = coefs.iloc[coefs.abs().argsort()[::-1]].head(n_features)
-        
+
         result = "\n| Feature | Coefficient |\n"
         result += "|:--------|:------------|\n"
         for feature, coef in top_coefs.items():
-            result += f"| {feature} | {coef:.4f} |\n"
+            # Use scientific notation for very small coefficients
+            if abs(coef) < 0.0001 and coef != 0:
+                result += f"| {feature} | {coef:.2e} |\n"
+            else:
+                result += f"| {feature} | {coef:.4f} |\n"
             
     elif model_type == 'svm':
         # SVM feature importance using perturbation method

@@ -433,7 +433,7 @@ sns.heatmap(train_df.isnull(), yticklabels=False, cbar=False, cmap='viridis', ax
 #| label: lasso-features
 #| output: asis
 
-# Display top 5 Lasso features using helper function
+# Display top 5 Lasso features using helper function (Lasso needs scaled data)
 print(display_top_features(best_lasso_model, train_df_sdd, 'lasso', n_features=5, dropout_column=dropout_column))
 ```
 
@@ -482,8 +482,8 @@ plt.tight_layout()
 #| label: svm-features-text
 #| output: asis
 
-# Display top 5 SVM features using helper function
-print(display_top_features(best_svm_model, train_processed, 'svm', n_features=5, dropout_column=dropout_column))
+# Display top 5 SVM features using helper function (SVM needs scaled data)
+print(display_top_features(best_svm_model, train_df_sdd, 'svm', n_features=5, dropout_column=dropout_column))
 ```
 
 ## SVM Feature Importance
