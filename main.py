@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from uitnodigingsregel.dataset import clean_data, remove_single_value_columns
+from uitnodigingsregel.dataset import impute_missing_values, remove_single_value_columns
 from uitnodigingsregel.evaluate import load_settings
 from uitnodigingsregel.features import convert_categorical_to_dummies, standardize_dataset
 from uitnodigingsregel.modeling.predict import (
@@ -25,6 +25,7 @@ def main() -> None:
     save_method = settings["save_method"]
     retrain_models = settings["retrain_models"]
     random_seed = settings["random_seed"]
+    knn_neighbors = settings["knn_neighbors"]
 
     # Load data: user data if available, otherwise synthetic demo data
     user_train = Path(settings["user_data_dir_train"])
@@ -39,8 +40,9 @@ def main() -> None:
         print("Pre-uploaded synthetic datasets found and loaded")
 
     # Data cleaning
-    train_clean = clean_data(train_df)
-    pred_clean = clean_data(pred_df)
+    train_clean = train_df.drop_duplicates()
+    pred_clean = pred_df.drop_duplicates()
+    train_clean, pred_clean = impute_missing_values(train_clean, pred_clean, n_neighbors=knn_neighbors)
     train_clean, pred_clean = remove_single_value_columns(train_clean, pred_clean)
 
     # Feature engineering
