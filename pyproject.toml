@@ -1,20 +1,16 @@
 [project]
-name = "uitnodigingsregel"
+name = "student_signal"
 version = "0.1.0"
-description = "Dropout prediction models for student intervention planning"
+description = "Domain library for student dropout prediction: data preparation, ranking, and evaluation"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "joblib>=1.4.2",
-    "jupyter>=1.1.1",
     "matplotlib>=3.8.0",
     "numpy>=2.2.2",
     "pandas>=2.2.3",
     "pyyaml>=6.0.2",
     "scikit-learn>=1.6.1",
-    "seaborn>=0.13.0",
-    "streamlit>=1.40",
-    "xlsxwriter>=3.2.2",
 ]
 
 [build-system]

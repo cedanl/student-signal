@@ -1,13 +1,15 @@
 """Tests for evaluate module."""
 
-from uitnodigingsregel.evaluate import get_stoplight_evaluation, load_settings
+from student_signal.evaluate import get_stoplight_evaluation, load_settings
 
 
 def test_load_settings_default() -> None:
     settings = load_settings()
-    assert "dropout_column" in settings
-    assert "random_seed" in settings
-    assert settings["dropout_column"] == "Dropout"
+    assert "imputation" in settings
+    assert "hyperparameters" in settings
+    assert "evaluation" in settings
+    assert settings["imputation"]["n_neighbors"] == 5
+    assert settings["hyperparameters"]["random_seed"] == 42
 
 
 def test_stoplight_green() -> None:

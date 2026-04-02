@@ -3,7 +3,7 @@
 import numpy as np
 import pandas as pd
 
-from uitnodigingsregel.dataset import impute_missing_values, remove_single_value_columns
+from student_signal.dataset import impute_missing_values, remove_single_value_columns
 
 
 def test_impute_missing_values_fills_na() -> None:

@@ -2,38 +2,35 @@
 
 from importlib.resources import files
 from pathlib import Path
+from typing import Any
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import yaml
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.linear_model import Lasso
-from sklearn.svm import SVC
 
 
 def load_settings(
     config_file: str | None = None,
-    settings_type: str = "default",
+    overrides: dict | None = None,
 ) -> dict:
-    """Load settings from YAML config file.
+    """Load domain settings from the library config, with optional overrides.
 
     Args:
-        config_file: Path to config YAML. Defaults to package metadata config.
-        settings_type: Which settings block to load ('default' or 'custom').
+        config_file: Path to a YAML config to use instead of the library default.
+        overrides: Dict of keys to override after loading. Shallow merge only.
 
     Returns:
-        Dictionary of settings values.
+        Dictionary of domain settings (hyperparameters, evaluation thresholds, etc.).
+        Does not include deployment settings such as data paths or column names.
     """
     if config_file is None:
-        config_file = str(files("uitnodigingsregel.metadata") / "config.yaml")
+        config_file = str(files("student_signal.metadata") / "config.yaml")
     with open(config_file, encoding="utf-8") as f:
         config = yaml.safe_load(f)
-    if settings_type == "default":
-        return config["default_settings"]
-    if settings_type == "custom":
-        return config["custom_settings"]
-    raise ValueError("No settings found. Choose 'default' or 'custom'.")
+    if overrides:
+        config.update(overrides)
+    return config
 
 
 def compute_dynamic_evaluation(
@@ -74,7 +71,7 @@ def compute_dynamic_evaluation(
 
 def prepare_model_predictions(
     validation_data: pd.DataFrame,
-    model: RandomForestRegressor | Lasso | SVC,
+    model: Any,
     model_name: str,
     dropout_column: str = "Dropout",
 ) -> pd.DataFrame:
@@ -133,7 +130,10 @@ def generate_stoplight_evaluation(
     """Generate a stoplight evaluation dashboard for all models.
 
     Args:
-        model_predictions: Dict mapping model names to (data, model, needs_scaling) tuples.
+        model_predictions: Dict mapping model names to (data, model) tuples.
+            Each key is the display name; each value is (validation_data, fitted_model).
+            The caller is responsible for passing the correct data variant
+            (scaled or unscaled) for each model.
         invite_pct: Main decision threshold percentage.
         dropout_column: Name of the target column.
         reports_dir: Directory to save report files and figures.
@@ -160,13 +160,11 @@ def generate_stoplight_evaluation(
             f"({n_correct} van {n_invited} uitgenodigde studenten)"
         )
 
-    model_name_map = {"Random Forest": "rf", "Lasso": "lasso", "SVM": "svm"}
-
     eval_results_all = {}
     model_data_info = {}
-    for name, (data, model, _needs_scaling) in model_predictions.items():
+    for name, (data, model) in model_predictions.items():
         try:
-            short = model_name_map.get(name, name.lower())
+            short = name.lower().replace(" ", "_")
             eval_results = prepare_model_predictions(data, model, short, dropout_column)
             eval_results_all[name] = (eval_results, short)
             model_data_info[name] = {
@@ -318,52 +316,28 @@ def generate_stoplight_evaluation(
 
 
 def save_model_metrics(
-    train_data: pd.DataFrame,
-    train_data_scaled: pd.DataFrame,
-    validation_data: pd.DataFrame,
-    validation_data_scaled: pd.DataFrame,
-    rf_model: RandomForestRegressor,
-    lasso_model: Lasso,
-    svm_model: SVC,
+    models: dict[str, tuple],
     dropout_column: str = "Dropout",
     reports_dir: Path = Path("reports"),
 ) -> dict:
     """Calculate and save R², MSE, precision, and sensitivity for all models.
 
     Args:
-        train_data: Unscaled training data (for RF).
-        train_data_scaled: Scaled training data (for Lasso/SVM).
-        validation_data: Unscaled validation data (for RF).
-        validation_data_scaled: Scaled validation data (for Lasso/SVM).
-        rf_model: Trained Random Forest model.
-        lasso_model: Trained Lasso model.
-        svm_model: Trained SVM model.
+        models: Dict mapping model display names to
+            (model, X_train, y_train, X_val, y_val) tuples.
+            The caller decides which data variant (scaled/unscaled) to pass
+            for each model.
         dropout_column: Name of the target column.
         reports_dir: Directory to write the report file.
 
     Returns:
         Dict of metrics per model.
     """
-    metrics: dict = {"Random Forest": {}, "Lasso": {}, "SVM": {}}
+    metrics: dict = {}
 
-    X_train_rf = train_data.drop(dropout_column, axis=1)
-    y_train_rf = train_data[dropout_column]
-    X_val_rf = validation_data.drop(dropout_column, axis=1)
-    y_val_rf = validation_data[dropout_column]
-
-    X_train_scaled = train_data_scaled.drop(dropout_column, axis=1)
-    y_train_scaled = train_data_scaled[dropout_column]
-    X_val_scaled = validation_data_scaled.drop(dropout_column, axis=1)
-    y_val_scaled = validation_data_scaled[dropout_column]
-
-    models_config = {
-        "Random Forest": (rf_model, X_train_rf, y_train_rf, X_val_rf, y_val_rf),
-        "Lasso": (lasso_model, X_train_scaled, y_train_scaled, X_val_scaled, y_val_scaled),
-        "SVM": (svm_model, X_train_scaled, y_train_scaled, X_val_scaled, y_val_scaled),
-    }
-
-    for name, (model, X_train, y_train, X_val, y_val) in models_config.items():
-        if name == "SVM" and hasattr(model, "predict_proba"):
+    for name, (model, X_train, y_train, X_val, y_val) in models.items():
+        metrics[name] = {}
+        if hasattr(model, "predict_proba"):
             y_train_pred = (model.predict_proba(X_train)[:, 1] >= 0.5).astype(int)
             y_val_pred = (model.predict_proba(X_val)[:, 1] >= 0.5).astype(int)
         else:
@@ -416,40 +390,25 @@ def save_model_metrics(
 
 
 def save_threshold_analysis(
-    train_data: pd.DataFrame,
-    train_data_scaled: pd.DataFrame,
-    validation_data: pd.DataFrame,
-    validation_data_scaled: pd.DataFrame,
-    rf_model: RandomForestRegressor,
-    lasso_model: Lasso,
-    svm_model: SVC,
+    model_predictions: dict[str, tuple],
     dropout_column: str = "Dropout",
     reports_dir: Path = Path("reports"),
 ) -> dict:
     """Generate and save threshold analysis for each model.
 
     Args:
-        train_data: Unscaled training data.
-        train_data_scaled: Scaled training data.
-        validation_data: Unscaled validation data.
-        validation_data_scaled: Scaled validation data.
-        rf_model: Trained Random Forest model.
-        lasso_model: Trained Lasso model.
-        svm_model: Trained SVM model.
+        model_predictions: Dict mapping model display names to (data, model) tuples.
+            The caller decides which data variant (scaled/unscaled) to pass
+            for each model.
         dropout_column: Name of the target column.
         reports_dir: Directory to write the report file.
 
     Returns:
         Dict of threshold DataFrames per model.
     """
-    model_configs = {
-        "Random Forest": (validation_data, rf_model, "rf"),
-        "Lasso": (validation_data_scaled, lasso_model, "lasso"),
-        "SVM": (validation_data_scaled, svm_model, "svm"),
-    }
-
     metrics: dict = {}
-    for name, (data, model, short) in model_configs.items():
+    for name, (data, model) in model_predictions.items():
+        short = name.lower().replace(" ", "_")
         eval_results = prepare_model_predictions(data, model, short, dropout_column)
         rows = []
         for _, row in eval_results.iterrows():
@@ -584,9 +543,7 @@ def process_evaluation_results(
         else:
             indicator = "🔴 🔴 🔴 Niet bruikbaar 🔴 🔴 🔴"
 
-        model_data = (
-            extract_model_data(lines, name) if name in ["Random Forest", "Lasso", "SVM"] else None
-        )
+        model_data = extract_model_data(lines, name) if lines else None
         model_results.append(
             {"name": name, "indicator": indicator, "metrics": metrics, "data": model_data}
         )

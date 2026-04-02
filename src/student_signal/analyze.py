@@ -1,18 +1,16 @@
 """Data analysis helpers: feature importance, missing data, metrics parsing."""
 
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pandas as pd
 from sklearn.calibration import CalibratedClassifierCV
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.linear_model import Lasso
-from sklearn.svm import SVC
 
 
 def get_coefficient_table(
     X_train: pd.DataFrame,
-    model: Lasso,
+    model: Any,
     X_train_original: pd.DataFrame,
 ) -> pd.Series:
     """Get Lasso coefficients scaled back to original feature scale.
@@ -34,7 +32,7 @@ def get_coefficient_table(
 
 def get_top_svm_features(
     validation_data: pd.DataFrame,
-    svm_model: SVC,
+    svm_model: Any,
     train_data_sdd: pd.DataFrame | None = None,
     n_features: int = 5,
     dropout_column: str = "Dropout",
@@ -152,18 +150,21 @@ def parse_model_metrics(
 
 
 def display_top_features(
-    model: RandomForestRegressor | Lasso | SVC,
+    model: Any,
     data: pd.DataFrame,
-    model_type: str,
     n_features: int = 5,
     dropout_column: str = "Dropout",
 ) -> str:
-    """Display top features for any model type as a markdown table.
+    """Display top features for any model as a markdown table.
+
+    Model type is detected automatically:
+    - Models with feature_importances_ (e.g. RandomForest) → importance ranking
+    - Models with coef_ (e.g. Lasso, LogisticRegression) → coefficient ranking
+    - All others (e.g. SVM) → perturbation-based importance
 
     Args:
-        model: Trained model object.
+        model: Fitted model object.
         data: DataFrame with features and dropout column.
-        model_type: One of 'rf', 'lasso', 'svm'.
         n_features: Number of top features to show.
         dropout_column: Name of the target column.
 
@@ -172,14 +173,14 @@ def display_top_features(
     """
     X = data.drop(dropout_column, axis=1)
 
-    if model_type == "rf":
+    if hasattr(model, "feature_importances_"):
         importances = pd.Series(model.feature_importances_, index=X.columns)
         top = importances.iloc[importances.abs().argsort()[::-1]].head(n_features)
         result = "\n| Feature | Belang |\n|:--------|:-------|\n"
         for feature, importance in top.items():
             result += f"| {feature} | {importance:.4f} |\n"
 
-    elif model_type == "lasso":
+    elif hasattr(model, "coef_"):
         coefs = pd.Series(model.coef_, index=X.columns)
         top = coefs.iloc[coefs.abs().argsort()[::-1]].head(n_features)
         result = "\n| Feature | Coefficient |\n|:--------|:------------|\n"
@@ -187,15 +188,12 @@ def display_top_features(
             fmt = f"{coef:.2e}" if abs(coef) < 0.0001 and coef != 0 else f"{coef:.4f}"
             result += f"| {feature} | {fmt} |\n"
 
-    elif model_type == "svm":
+    else:
         top_features = get_top_svm_features(
             data, model, n_features=n_features, dropout_column=dropout_column
         )
         result = "\n| Feature | Belang |\n|:--------|:-------|\n"
         for feature, importance in top_features:
             result += f"| {feature} | {importance:.4f} |\n"
-
-    else:
-        result = f"\nOnbekend model type: {model_type}\n"
 
     return result

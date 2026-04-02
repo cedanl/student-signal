@@ -1,4 +1,4 @@
-"""Data cleaning functions for the uitnodigingsregel pipeline."""
+"""Data cleaning functions for the student_signal pipeline."""
 
 from pathlib import Path
 

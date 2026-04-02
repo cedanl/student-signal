@@ -1,4 +1,4 @@
-# Uitnodigingsregel
+# student-signal
 
 ## Overview
 Dropout prediction models for student intervention planning. Trains Random Forest, Lasso, and SVM models on student data and ranks students by predicted dropout probability. Type 2 (Analysis) repository.
@@ -15,7 +15,7 @@ Follow CEDA technical standards: https://github.com/cedanl/.github/tree/main/sta
 
 ## Project Structure
 ```
-├── src/uitnodigingsregel/       # Installable package
+├── src/student_signal/       # Installable package
 │   ├── dataset.py               # Data cleaning (clean_data, remove_single_value_columns)
 │   ├── features.py              # Feature engineering (convert_categorical_to_dummies, standardize_dataset)
 │   ├── evaluate.py              # Model evaluation (load_settings, prepare_model_predictions, etc.)
