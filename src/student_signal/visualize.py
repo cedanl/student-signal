@@ -124,7 +124,7 @@ def generate_sensitivity_plot(
 def generate_svm_importance_plot(
     validation_data: pd.DataFrame,
     svm_model: Any,
-    train_data_sdd: pd.DataFrame | None = None,
+    train_data_scaled: pd.DataFrame | None = None,
     dropout_column: str = "Dropout",
     do_save: bool = False,
 ) -> plt.Figure:
@@ -133,14 +133,14 @@ def generate_svm_importance_plot(
     Args:
         validation_data: DataFrame with features and dropout column.
         svm_model: Trained SVM model.
-        train_data_sdd: Scaled training data (preferred over validation_data).
+        train_data_scaled: Scaled training data (preferred over validation_data).
         dropout_column: Name of the target column.
         do_save: Whether to save the plot to file.
 
     Returns:
         Matplotlib Figure object.
     """
-    data = train_data_sdd.copy() if train_data_sdd is not None else validation_data.copy()
+    data = train_data_scaled.copy() if train_data_scaled is not None else validation_data.copy()
     data = data.fillna(data.mean())
     data = data.replace([np.inf, -np.inf], np.nan).fillna(data.mean())
 
