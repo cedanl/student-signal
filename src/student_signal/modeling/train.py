@@ -30,10 +30,8 @@ def train_random_forest(
 
     grid_model = GridSearchCV(rf, rf_parameters, refit=True, n_jobs=-1, verbose=0)
     grid_model.fit(X, y)
-    best_rf_model = RandomForestRegressor(**grid_model.best_params_)
-    best_rf_model.fit(X, y)
 
-    return best_rf_model
+    return grid_model.best_estimator_
 
 
 def train_lasso(
