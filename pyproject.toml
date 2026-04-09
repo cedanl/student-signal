@@ -1,9 +1,21 @@
 [project]
 name = "student_signal"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Domain library for student dropout prediction: data preparation, ranking, and evaluation"
 readme = "README.md"
+license = { file = "LICENSE" }
 requires-python = ">=3.13"
+authors = [
+    { name = "CEDA"},
+]
+keywords = ["student", "dropout", "prediction", "intervention", "machine-learning", "education"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Education",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+]
 dependencies = [
     "joblib>=1.4.2",
     "matplotlib>=3.8.0",
@@ -13,14 +25,22 @@ dependencies = [
     "scikit-learn>=1.6.1",
 ]
 
+[project.urls]
+Repository = "https://github.com/cedanl/student-signal"
+Issues = "https://github.com/cedanl/student-signal/issues"
+Changelog = "https://github.com/cedanl/student-signal/releases"
+
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
 
-[project.optional-dependencies]
+[tool.hatch.version]
+source = "vcs"
+
+[dependency-groups]
 dev = [
-    "pytest>=8.0",
-    "ruff>=0.8",
+    "pytest>=9.0.2",
+    "ruff>=0.15.6",
 ]
 
 [tool.uv]
@@ -36,9 +56,3 @@ ignore = ["N803", "N806"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-
-[dependency-groups]
-dev = [
-    "pytest>=9.0.2",
-    "ruff>=0.15.6",
-]
