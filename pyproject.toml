@@ -1,8 +1,9 @@
 [project]
 name = "student_signal"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Domain library for student dropout prediction: data preparation, ranking, and evaluation"
 readme = "README.md"
+license = { file = "LICENSE" }
 requires-python = ">=3.13"
 dependencies = [
     "joblib>=1.4.2",
@@ -13,9 +14,16 @@ dependencies = [
     "scikit-learn>=1.6.1",
 ]
 
+[project.urls]
+Repository = "https://github.com/cedanl/student-signal"
+Issues = "https://github.com/cedanl/student-signal/issues"
+
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
+
+[tool.hatch.version]
+source = "vcs"
 
 [project.optional-dependencies]
 dev = [
