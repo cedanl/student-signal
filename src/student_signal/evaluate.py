@@ -65,8 +65,7 @@ def compute_dynamic_evaluation(
     data[col_recall] = (data[col_total] / total_dropout).round(2)
     data["perc_uitgenodigde_studenten"] = (data["i"] / len(data) * 100).round(1)
 
-    data.drop([col_flag, col_total, "i"], axis=1, inplace=True)
-    return data
+    return data.drop([col_flag, col_total, "i"], axis=1)
 
 
 def prepare_model_predictions(
@@ -410,16 +409,13 @@ def save_threshold_analysis(
     for name, (data, model) in model_predictions.items():
         short = name.lower().replace(" ", "_")
         eval_results = prepare_model_predictions(data, model, short, dropout_column)
-        rows = []
-        for _, row in eval_results.iterrows():
-            rows.append(
-                {
-                    "percentage": row["perc_uitgenodigde_studenten"],
-                    "precision": row[f"precision{short}"],
-                    "recall": row[f"recall{short}"],
-                }
-            )
-        metrics[name] = pd.DataFrame(rows)
+        metrics[name] = eval_results[
+            ["perc_uitgenodigde_studenten", f"precision{short}", f"recall{short}"]
+        ].rename(columns={
+            "perc_uitgenodigde_studenten": "percentage",
+            f"precision{short}": "precision",
+            f"recall{short}": "recall",
+        })
 
     reports_dir = Path(reports_dir)
     reports_dir.mkdir(parents=True, exist_ok=True)
