@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Any
 
 import pandas as pd
+from sklearn.impute import KNNImputer
 from sklearn.preprocessing import MinMaxScaler
 
 from student_signal.dataset import impute_missing_values, remove_single_value_columns
@@ -22,6 +23,7 @@ class PreparedData:
         X_pred: Feature matrix for prediction (unscaled).
         X_train_scaled: Feature matrix for training (scaled).
         X_pred_scaled: Feature matrix for prediction (scaled, same scale as train).
+        imputer: Fitted KNNImputer. Serialise this alongside your model.
         scaler: Fitted MinMaxScaler. Serialise this alongside your model.
         train_df: Full training DataFrame (features + target, unscaled).
         train_df_scaled: Full training DataFrame (features + target, scaled).
@@ -36,6 +38,7 @@ class PreparedData:
     X_pred: pd.DataFrame
     X_train_scaled: pd.DataFrame
     X_pred_scaled: pd.DataFrame
+    imputer: KNNImputer
     scaler: MinMaxScaler
     train_df: pd.DataFrame
     train_df_scaled: pd.DataFrame
@@ -80,7 +83,7 @@ def prepare(
     )
     n_neighbors = settings.get("imputation", {}).get("n_neighbors", 5)
 
-    train_df, pred_df = impute_missing_values(train_df, pred_df, n_neighbors=n_neighbors)
+    train_df, pred_df, imputer = impute_missing_values(train_df, pred_df, n_neighbors=n_neighbors)
     train_df, pred_df = remove_single_value_columns(train_df, pred_df)
     train_df, pred_df = convert_categorical_to_dummies(train_df, pred_df, target_col)
     train_df_scaled, pred_df_scaled, scaler = standardize_dataset(train_df, pred_df, target_col)
@@ -97,6 +100,7 @@ def prepare(
         X_pred=X_pred,
         X_train_scaled=X_train_scaled,
         X_pred_scaled=X_pred_scaled,
+        imputer=imputer,
         scaler=scaler,
         train_df=train_df,
         train_df_scaled=train_df_scaled,

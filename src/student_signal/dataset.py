@@ -10,7 +10,7 @@ def impute_missing_values(
     dataset_train: pd.DataFrame,
     dataset_pred: pd.DataFrame,
     n_neighbors: int = 5,
-) -> tuple[pd.DataFrame, pd.DataFrame]:
+) -> tuple[pd.DataFrame, pd.DataFrame, KNNImputer]:
     """Impute missing values using KNN, fitted on train data only.
 
     Fits a KNNImputer on the training set and applies it to both train and
@@ -22,7 +22,9 @@ def impute_missing_values(
         n_neighbors: Number of neighbors for KNN imputation.
 
     Returns:
-        Tuple of (train, pred) DataFrames with imputed numeric columns.
+        Tuple of (train, pred) DataFrames with imputed numeric columns,
+        and the fitted KNNImputer. Serialise the imputer alongside your
+        model so it can be reused consistently at predict time.
     """
     numerical_cols = dataset_train.select_dtypes(include=["number"]).columns.tolist()
 
@@ -34,7 +36,7 @@ def impute_missing_values(
     dataset_train[numerical_cols] = imputer.transform(dataset_train[numerical_cols])
     dataset_pred[numerical_cols] = imputer.transform(dataset_pred[numerical_cols])
 
-    return dataset_train, dataset_pred
+    return dataset_train, dataset_pred, imputer
 
 
 def remove_single_value_columns(
