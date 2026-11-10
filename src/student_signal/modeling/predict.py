@@ -39,23 +39,20 @@ def predict_model(
 
     Args:
         model: Fitted model with .predict() or .predict_proba().
-        pred_df: Prediction DataFrame with features and optionally a dropout column.
+        pred_df: Prediction DataFrame with features, the student ID column and
+            optionally a dropout column.
         dropout_column: Name of the target column (dropped before predicting if present).
-        studentnumber_column: Name of the student ID column.
+        studentnumber_column: Name of the student ID column (dropped before predicting).
 
     Returns:
         DataFrame with students ranked by predicted dropout probability.
     """
-    X_pred = (
-        pred_df.drop(columns=[dropout_column])
-        if dropout_column in pred_df.columns
-        else pred_df.drop(columns=[studentnumber_column], errors="ignore")
-    )
+    X_pred = pred_df.drop(columns=[dropout_column, studentnumber_column], errors="ignore")
     studentnumbers = pred_df[[studentnumber_column]]
 
     if hasattr(model, "predict_proba"):
-        predictions = pd.Series(model.predict_proba(X_pred)[:, 1], index=X_pred.index)
+        predictions = pd.Series(model.predict_proba(X_pred)[:, 1])
     else:
-        predictions = pd.Series(model.predict(X_pred), index=X_pred.index)
+        predictions = pd.Series(model.predict(X_pred))
 
     return _rank_predictions(predictions, studentnumbers, studentnumber_column)

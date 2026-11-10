@@ -40,6 +40,8 @@ results = evaluate({"Random Forest": (model, False)}, prepared, invite_pct=20)
 
 `rank()` returns a DataFrame with columns `ranking`, `Studentnummer`, and `voorspelling`, sorted highest risk first.
 
+The student ID column (`id_col`) is never used as a feature. `prepare()` removes it from every matrix and DataFrame in `PreparedData` and keeps the IDs in `prepared.train_ids` and `prepared.pred_ids`, in row order. IDs may be numbers or text.
+
 `evaluate()` returns precision/recall metrics at multiple invitation thresholds with a traffic light status (Betrouwbaar / Gebruik met voorzichtigheid / Niet bruikbaar).
 
 ## Development

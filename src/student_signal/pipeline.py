@@ -31,6 +31,11 @@ class PreparedData:
         pred_df_scaled: Full prediction DataFrame (features + target column, scaled).
         target_col: Name of the target column.
         id_col: Name of the student ID column.
+        train_ids: Student IDs of the training rows, in row order.
+        pred_ids: Student IDs of the prediction rows, in row order.
+
+    The student ID is not a feature: it is absent from every matrix and
+    DataFrame above. Rows are matched to train_ids and pred_ids by position.
     """
 
     X_train: pd.DataFrame
@@ -46,6 +51,8 @@ class PreparedData:
     pred_df_scaled: pd.DataFrame
     target_col: str
     id_col: str
+    train_ids: pd.Series
+    pred_ids: pd.Series
 
 
 def prepare(
@@ -58,6 +65,7 @@ def prepare(
     """Clean and transform raw student data into train/predict matrices.
 
     This function applies the full preprocessing pipeline:
+    - Separation of the student ID, so it is never used as a feature
     - Missing value imputation (KNN, fit on train only)
     - Removal of constant-value columns
     - One-hot encoding of categorical columns
@@ -71,12 +79,25 @@ def prepare(
         pred_df: Raw prediction DataFrame including target column (may be zeros/NaN).
         target_col: Name of the dropout/target column. Default: 'Dropout'.
         id_col: Name of the student ID column. Default: 'Studentnummer'.
+            Values may be numbers or text.
         config: Optional config overrides. Pass a dict to override specific
             library defaults, or a path string to load a custom YAML entirely.
 
     Returns:
         PreparedData with all matrices needed for training and prediction.
+
+    Raises:
+        ValueError: If id_col is missing from train_df or pred_df.
     """
+    for name, df in (("train_df", train_df), ("pred_df", pred_df)):
+        if id_col not in df.columns:
+            raise ValueError(f"id_col '{id_col}' not found in {name}")
+
+    train_ids = train_df[id_col].reset_index(drop=True)
+    pred_ids = pred_df[id_col].reset_index(drop=True)
+    train_df = train_df.drop(columns=[id_col])
+    pred_df = pred_df.drop(columns=[id_col])
+
     settings = load_settings(
         config_file=config if isinstance(config, str) else None,
         overrides=config if isinstance(config, dict) else None,
@@ -108,6 +129,8 @@ def prepare(
         pred_df_scaled=pred_df_scaled,
         target_col=target_col,
         id_col=id_col,
+        train_ids=train_ids,
+        pred_ids=pred_ids,
     )
 
 
@@ -128,14 +151,13 @@ def rank(
         DataFrame with columns [rank, <id_col>, score], sorted highest risk first.
     """
     X = prepared.X_pred_scaled if use_scaled else prepared.X_pred
-    studentnumbers = prepared.pred_df[[prepared.id_col]]
 
     if hasattr(model, "predict_proba"):
-        predictions = pd.Series(model.predict_proba(X)[:, 1], index=X.index)
+        predictions = pd.Series(model.predict_proba(X)[:, 1])
     else:
-        predictions = pd.Series(model.predict(X), index=X.index)
+        predictions = pd.Series(model.predict(X))
 
-    return _rank_predictions(predictions, studentnumbers, prepared.id_col)
+    return _rank_predictions(predictions, prepared.pred_ids.to_frame(), prepared.id_col)
 
 
 def evaluate(
